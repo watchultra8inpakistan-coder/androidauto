@@ -1,43 +1,16 @@
-name: Unzip and Build Debug APK
-
-on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:
-
+name: Build APK
+on: [workflow_dispatch, push]
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-
-    - name: Unzip Project Files
-      run: |
-        unzip project.zip -d extracted_project
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'zulu'
-        java-version: '17'
-
-    # Dynamically finds the folder containing gradlew so paths never break
-    - name: Locate Project Root and Set Permissions
-      run: |
-        GRADLE_DIR=$(find extracted_project -name "gradlew" -exec dirname {} \+ | head -n 1)
-        echo "Found gradlew in directory: $GRADLE_DIR"
-        echo "PROJECT_DIR=$GRADLE_DIR" >> $GITHUB_ENV
-        chmod +x "$GRADLE_DIR/gradlew"
-
-    - name: Build Debug APK
-      run: |
-        cd ${{ env.PROJECT_DIR }}
-        ./gradlew assembleDebug
-
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: debug-apk
-        path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/checkout@v4
+      - run: unzip -q ./*.zip
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.7' }
+      - run: gradle assembleDebug --no-daemon
+        working-directory: CarLinkMirror
+      - uses: actions/upload-artifact@v4
+        with: { name: CarLinkMirror-apk, path: CarLinkMirror/app/build/outputs/apk/debug/app-debug.apk }
