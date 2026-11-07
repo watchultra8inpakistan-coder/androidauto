@@ -23,18 +23,21 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Change wrapper permissions
+    # Dynamically finds the folder containing gradlew so paths never break
+    - name: Locate Project Root and Set Permissions
       run: |
-        cd extracted_project/CarLinkMirror
-        chmod +x gradlew
+        GRADLE_DIR=$(find extracted_project -name "gradlew" -exec dirname {} \+ | head -n 1)
+        echo "Found gradlew in directory: $GRADLE_DIR"
+        echo "PROJECT_DIR=$GRADLE_DIR" >> $GITHUB_ENV
+        chmod +x "$GRADLE_DIR/gradlew"
 
     - name: Build Debug APK
       run: |
-        cd extracted_project/CarLinkMirror
+        cd ${{ env.PROJECT_DIR }}
         ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: debug-apk
-        path: extracted_project/CarLinkMirror/app/build/outputs/apk/debug/app-debug.apk
+        path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
